@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mitasu Lubricant Lookup</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --ink: #1c2430;
+    --muted: #6b7684;
+    --line: #dfe3e8;
+    --accent: #0b5cab;
+    --accent-soft: #e8f0fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 18px 20px;
+  }
+  header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: .2px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: .85; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  .controls {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px 14px;
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label {
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .4px; color: var(--muted);
+  }
+  select {
+    font: inherit;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #fff;
+    color: var(--ink);
+    width: 100%;
+  }
+  select:disabled { background: #f0f1f3; color: #9aa3ad; }
+
+  .status { margin: 22px 2px; color: var(--muted); }
+  .status.error { color: #b3261e; }
+
+  .fitment {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-top: 18px;
+    overflow: hidden;
+  }
+  .fitment > h2 {
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 15px;
+    background: var(--accent-soft);
+    border-bottom: 1px solid var(--line);
+  }
+  .fitment > h2 small { font-weight: 400; color: var(--muted); }
+  .specs {
+    display: flex; flex-wrap: wrap; gap: 6px 18px;
+    padding: 10px 16px;
+    font-size: 13px; color: var(--muted);
+    border-bottom: 1px solid var(--line);
+  }
+  .specs b { color: var(--ink); font-weight: 600; }
+
+  .category { padding: 12px 16px 16px; border-top: 1px solid var(--line); }
+  .category:first-of-type { border-top: none; }
+  .category > h3 {
+    margin: 0 0 10px; font-size: 13px; text-transform: uppercase;
+    letter-spacing: .5px; color: var(--muted);
+  }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .tile {
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .tile .line { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
+  .tile .code { font-size: 22px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .tile .code.raw { font-size: 16px; color: var(--ink); }
+  .tile .alt { font-size: 12px; color: var(--muted); }
+  .tile figure { margin: 0; }
+  .tile img {
+    width: 100%; height: 150px; object-fit: contain;
+    background: #fafbfc; border: 1px solid var(--line); border-radius: 6px;
+    cursor: zoom-in;
+  }
+  .tile .nophoto {
+    height: 150px; display: flex; align-items: center; justify-content: center;
+    background: #fafbfc; border: 1px dashed var(--line); border-radius: 6px;
+    color: #9aa3ad; font-size: 12px;
+  }
+
+  #lightbox {
+    position: fixed; inset: 0; background: rgba(0,0,0,.8);
+    display: none; align-items: center; justify-content: center; padding: 24px;
+    cursor: zoom-out; z-index: 50;
+  }
+  #lightbox.on { display: flex; }
+  #lightbox img { max-width: 100%; max-height: 100%; background: #fff; border-radius: 8px; }
+
+  @media (max-width: 560px) {
+    .tiles { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mitasu Lubricant Lookup</h1>
+  <p>Pick a vehicle to see its recommended engine oil, oil filter, transaxle fluid and gear oil.</p>
+</header>
+
+<main>
+  <div class="controls">
+    <div class="field">
+      <label for="brand">Car make </label>
+      <select id="brand"><option value="">Select…</option></select>
+    </div>
+    <div class="field">
+      <label for="type">Type</label>
+      <select id="type" disabled><option value="">—</option></select>
+    </div>
+    <div class="field">
+      <label for="year">Year</label>
+      <select id="year" disabled><option value="">—</option></select>
+    </div>
+    <div class="field">
+      <label for="model">Model</label>
+      <select id="model" disabled><option value="">—</option></select>
+    </div>
+    <div class="field">
+      <label for="drive">Driving wheels</label>
+      <select id="drive" disabled><option value="">—</option></select>
+    </div>
+    <div class="field">
+      <label for="engine">Engine</label>
+      <select id="engine" disabled><option value="">—</option></select>
+    </div>
+    <div class="field">
+      <label for="grade">Grade / equipment</label>
+      <select id="grade" disabled><option value="">(any)</option></select>
+    </div>
+    <div class="field">
+      <label for="variant">Liter capacity</label>
+      <select id="variant"><option value="">Any</option></select>
+    </div>
+  </div>
+
+  <div id="status" class="status">Start by choosing a car make .</div>
+  <div id="results"></div>
+</main>
+
+<div id="lightbox"><img alt=""></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const CASCADE = ["brand", "type", "year", "model", "drive", "engine", "grade"];
+let lastResult = null;
+
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) {
+    let msg = r.statusText;
+    try { msg = (await r.json()).error || msg; } catch (e) {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+function params(upTo) {
+  const p = new URLSearchParams();
+  for (const lvl of CASCADE) {
+    if (lvl === upTo) break;
+    const v = $(lvl).value;
+    if (v) p.set(lvl, v);
+  }
+  return p;
+}
+
+function fillSelect(sel, values, placeholder) {
+  sel.innerHTML = "";
+  const ph = document.createElement("option");
+  ph.value = "";
+  ph.textContent = placeholder;
+  sel.appendChild(ph);
+  for (const v of values) {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = v;
+    sel.appendChild(o);
+  }
+}
+
+function resetFrom(level) {
+  const idx = CASCADE.indexOf(level);
+  for (let i = idx; i < CASCADE.length; i++) {
+    const sel = $(CASCADE[i]);
+    sel.innerHTML = `<option value="">${CASCADE[i] === "grade" ? "(any)" : "—"}</option>`;
+    sel.disabled = true;
+  }
+  lastResult = null;
+  $("results").innerHTML = "";
+}
+
+async function loadLevel(level, placeholder) {
+  const sel = $(level);
+  try {
+    const vals = await getJSON(`/api/options?level=${level}&` + params(level).toString());
+    fillSelect(sel, vals, placeholder);
+    sel.disabled = vals.length === 0;
+  } catch (e) {
+    setStatus("Could not load " + level + ": " + e.message, true);
+  }
+}
+
+function setStatus(text, isError) {
+  const s = $("status");
+  s.textContent = text || "";
+  s.className = "status" + (isError ? " error" : "");
+  s.style.display = text ? "" : "none";
+}
+
+async function maybeLoadResult() {
+  const ready = ["brand", "type", "year", "model", "drive", "engine"].every(l => $(l).value);
+  if (!ready) { setStatus("Select a car make, type, year, model, driving wheels and engine."); $("results").innerHTML = ""; return; }
+  setStatus("Loading…");
+  try {
+    lastResult = await getJSON("/api/result?" + params(null).toString());
+    render();
+  } catch (e) {
+    setStatus("Lookup failed: " + e.message, true);
+  }
+}
+
+function pickPhoto(photos) {
+  if (!photos || !photos.length) return null;
+  const want = $("variant").value;
+  return (want && photos.find(p => p.variant === want))
+      || photos.find(p => p.variant === "")
+      || photos.slice().sort((a, b) => (a.variant || "9") .localeCompare(b.variant || "9"))[0]
+      || photos[0];
+}
+
+function render() {
+  const box = $("results");
+  box.innerHTML = "";
+  const fits = (lastResult && lastResult.fitments) || [];
+  if (!fits.length) { setStatus("No matching vehicle in the catalog.", false); return; }
+  setStatus(fits.length === 1 ? "" : `${fits.length} matching variants — check drive / transmission below.`);
+
+  for (const f of fits) {
+    const el = document.createElement("section");
+    el.className = "fitment";
+
+    const spec = (label, val) => val ? `<span><b>${label}:</b> ${val}</span>` : "";
+    el.innerHTML = `
+      <h2>${f.brand} ${f.model} <small>${f.chassis || ""}</small></h2>
+      <div class="specs">
+        ${spec("Year", f.year_raw)}
+        ${spec("Drive", f.drive)}
+        ${spec("Engine", f.engine)}
+        ${spec("Displacement", f.displacement && f.displacement + " cc")}
+        ${spec("Grade", f.equipment)}
+        ${spec("Engine oil cap.", f.oil_capacity && f.oil_capacity + " L")}
+        ${spec("Transaxle", [f.trans_type, f.trans_capacity && f.trans_capacity + " L"].filter(Boolean).join(" "))}
+      </div>`;
+
+    const byCat = {};
+    for (const g of f.sheet) (byCat[g.category] ||= []).push(g);
+
+    for (const cat of Object.keys(byCat)) {
+      const c = document.createElement("div");
+      c.className = "category";
+      c.innerHTML = `<h3>${cat}</h3>`;
+      const tiles = document.createElement("div");
+      tiles.className = "tiles";
+
+      for (const group of byCat[cat]) {
+        for (const entry of group.entries) {
+          const tile = document.createElement("div");
+          tile.className = "tile";
+          const photo = pickPhoto(entry.photos);
+          const isCode = !!entry.code;
+          tile.innerHTML = `
+            ${group.line ? `<div class="line">${group.line}</div>` : ""}
+            <div class="code ${isCode ? "" : "raw"}">${entry.code || entry.raw || "—"}</div>
+            ${isCode && entry.raw && entry.raw !== entry.code ? `<div class="alt">catalog: ${entry.raw}</div>` : ""}
+            ${photo
+              ? `<figure><img loading="lazy" src="${photo.url}" alt="${entry.code}"></figure>`
+              : `<div class="nophoto">${isCode ? "no photo on file" : "no product image"}</div>`}`;
+          tiles.appendChild(tile);
+        }
+      }
+      c.appendChild(tiles);
+      el.appendChild(c);
+    }
+    box.appendChild(el);
+  }
+}
+
+/* ---- wiring ---- */
+$("brand").addEventListener("change", async () => {
+  resetFrom("type");
+  await loadLevel("type", "Select…");
+  setStatus("Select a type.");
+});
+$("type").addEventListener("change", async () => {
+  resetFrom("year");
+  await loadLevel("year", "Select…");
+  setStatus("Select a year.");
+});
+$("year").addEventListener("change", async () => {
+  resetFrom("model");
+  await loadLevel("model", "Select…");
+  setStatus("Select a model.");
+});
+$("model").addEventListener("change", async () => {
+  resetFrom("drive");
+  await loadLevel("drive", "Select…");
+  setStatus("Select driving wheels.");
+});
+$("drive").addEventListener("change", async () => {
+  resetFrom("engine");
+  await loadLevel("engine", "Select…");
+  setStatus("Select an engine.");
+});
+$("engine").addEventListener("change", async () => {
+  resetFrom("grade");
+  await loadLevel("grade", "(any)");
+  await maybeLoadResult();
+});
+$("grade").addEventListener("change", maybeLoadResult);
+$("variant").addEventListener("change", () => { if (lastResult) render(); });
+
+$("results").addEventListener("click", e => {
+  if (e.target.tagName === "IMG" && e.target.closest(".tile")) {
+    const lb = $("lightbox");
+    lb.querySelector("img").src = e.target.src;
+    lb.classList.add("on");
+  }
+});
+$("lightbox").addEventListener("click", () => $("lightbox").classList.remove("on"));
+
+(async function init() {
+  await loadLevel("brand", "Select…");
+  try {
+    const vs = await getJSON("/api/variants");
+    for (const v of vs) {
+      const o = document.createElement("option");
+      o.value = v; o.textContent = v + " L";
+      $("variant").appendChild(o);
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

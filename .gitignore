@@ -1,0 +1,20 @@
+# Generated database (rebuild with: python import_catalog.py)
+catalog.db
+
+# Raw Photoshop source files for the product photos -- not used by the app
+# (only .jpg/.jpeg/.png/.webp/.gif are read), and too large/many for git
+# (1.4GB total, one file over GitHub's 100MB limit).
+photos/**/*.psd
+photos/**/*.tif
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
